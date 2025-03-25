@@ -1,78 +1,44 @@
-local player = game.Players.LocalPlayer
+-- Load your existing ESP and tracer functionality
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Katanaloll/esp/refs/heads/main/esp"))()
 
--- Function to enable ESP and tracers for a specific player
-local function enable_esp_for_player(targetPlayer)
-    if targetPlayer ~= player and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        -- Create ESP box
-        if not targetPlayer.Character.HumanoidRootPart:FindFirstChild("ESPBox") then
-            local espBox = Instance.new("BoxHandleAdornment")
-            espBox.Name = "ESPBox"
-            espBox.Size = Vector3.new(4, 5, 1)
-            espBox.Adornee = targetPlayer.Character.HumanoidRootPart
-            espBox.AlwaysOnTop = true
-            espBox.ZIndex = 10
-            espBox.Transparency = 0.5
-            espBox.Color = BrickColor.new("Bright red")
-            espBox.Parent = targetPlayer.Character.HumanoidRootPart
-        end
+-- Function to create name tags for players
+local Players = game:GetService("Players")
 
-        -- Create Tracer
-        if not targetPlayer.Character.HumanoidRootPart:FindFirstChild("Tracer") then
-            local tracer = Instance.new("Beam")
-            tracer.Name = "Tracer"
-            tracer.Width0 = 0.1
-            tracer.Width1 = 0.1
-            tracer.Color = ColorSequence.new(Color3.new(1, 0, 0)) -- Red tracer
-            tracer.Transparency = NumberSequence.new(0) -- Fully visible
+local function createNameTag(player)
+    local character = player.Character or player.CharacterAdded:Wait()
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        local rootPart = character.HumanoidRootPart
 
-            -- Attachments for Tracer
-            local startAttachment = Instance.new("Attachment", player.Character.HumanoidRootPart)
-            local endAttachment = Instance.new("Attachment", targetPlayer.Character.HumanoidRootPart)
+        -- Create a BillboardGui for the name tag
+        local billboard = Instance.new("BillboardGui")
+        billboard.Adornee = rootPart
+        billboard.Size = UDim2.new(0, 200, 0, 50)
+        billboard.AlwaysOnTop = true
+        billboard.Name = "ESPNameTag"
 
-            tracer.Attachment0 = startAttachment
-            tracer.Attachment1 = endAttachment
-            tracer.Parent = targetPlayer.Character.HumanoidRootPart
-        end
+        local textLabel = Instance.new("TextLabel", billboard)
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.TextColor3 = Color3.new(1, 1, 1) -- White text
+        textLabel.Text = player.DisplayName -- Use the player's display name
+        textLabel.Font = Enum.Font.SourceSansBold
+        textLabel.TextSize = 16
+
+        billboard.Parent = player.Character
     end
 end
 
--- Function to update ESP and tracers dynamically
-local function update_esp()
-    for _, targetPlayer in pairs(game.Players:GetPlayers()) do
-        if targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            enable_esp_for_player(targetPlayer)
-        end
-    end
-end
-
--- Listen for new players joining
-game.Players.PlayerAdded:Connect(function(newPlayer)
-    newPlayer.CharacterAdded:Connect(function()
-        wait(1) -- Wait for the character to load
-        enable_esp_for_player(newPlayer)
+-- Add name tags to players as they join
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        createNameTag(player)
     end)
 end)
 
--- Listen for players leaving the game
-game.Players.PlayerRemoving:Connect(function(removedPlayer)
-    if removedPlayer.Character and removedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        -- Clean up ESP and tracers for removed players
-        if removedPlayer.Character.HumanoidRootPart:FindFirstChild("ESPBox") then
-            removedPlayer.Character.HumanoidRootPart.ESPBox:Destroy()
-        end
-        if removedPlayer.Character.HumanoidRootPart:FindFirstChild("Tracer") then
-            removedPlayer.Character.HumanoidRootPart.Tracer:Destroy()
-        end
+-- Add name tags to existing players
+for _, player in pairs(Players:GetPlayers()) do
+    if player.Character then
+        createNameTag(player)
     end
-end)
-
--- Listen for respawn events
-for _, existingPlayer in pairs(game.Players:GetPlayers()) do
-    existingPlayer.CharacterAdded:Connect(function()
-        wait(1) -- Wait for the character to load
-        enable_esp_for_player(existingPlayer)
-    end)
 end
 
--- Initialize ESP for current players
-update_esp()
